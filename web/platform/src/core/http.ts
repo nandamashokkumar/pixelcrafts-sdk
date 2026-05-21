@@ -27,11 +27,16 @@ export class HttpClient {
     if (this.cachedToken && now - this.tokenCachedAt < this.cacheMs) {
       h["Authorization"] = `Bearer ${this.cachedToken}`;
     } else {
-      const token = await cfg.tokenProvider();
-      if (token) {
-        this.cachedToken = token;
-        this.tokenCachedAt = now;
-        h["Authorization"] = `Bearer ${token}`;
+      try {
+        const token = await cfg.tokenProvider();
+        if (token) {
+          this.cachedToken = token;
+          this.tokenCachedAt = now;
+          h["Authorization"] = `Bearer ${token}`;
+        }
+      } catch {
+        // tokenProvider failed — proceed without auth header; the request
+        // will likely 401 and trigger the refresh/retry path.
       }
     }
     return h;
@@ -80,11 +85,15 @@ export class HttpClient {
     this.clearTokenCache();
     const refresher = getConfig().tokenForceRefresher;
     if (refresher) {
-      const token = await refresher();
-      if (token) {
-        this.cachedToken = token;
-        this.tokenCachedAt = Date.now();
-        return token;
+      try {
+        const token = await refresher();
+        if (token) {
+          this.cachedToken = token;
+          this.tokenCachedAt = Date.now();
+          return token;
+        }
+      } catch {
+        // refresher failed — fall through to session expired
       }
     }
     this.fireSessionExpired();
@@ -122,21 +131,44 @@ export class HttpClient {
     }
   }
 
+  /** Shared helper: parse JSON body and extract the data payload. */
+  private async parseBody(
+    res: Response
+  ): Promise<{ ok: true; data: unknown } | { ok: false; error: string }> {
+    const json = await res.json().catch(() => ({}));
+    const data = json && typeof json === "object" && "data" in json
+      ? json.data
+      : json;
+    return { ok: true, data };
+  }
+
+  private makeResult<T>(
+    res: Response | null,
+    extract: (data: unknown) => T | null
+  ): ApiResult<T> {
+    if (!res)
+      return { success: false, data: null, error: "Unable to connect." };
+    if (!res.ok)
+      return { success: false, data: null, error: this.friendlyError(res) };
+    return this.parseBody(res).then((parsed) => {
+      if (!parsed.ok) return { success: false, data: null, error: parsed.error };
+      const extracted = extract(parsed.data);
+      if (extracted === null)
+        return { success: false, data: null, error: "Unexpected response format." };
+      return { success: true, data: extracted, error: null };
+    }) as unknown as ApiResult<T>;
+  }
+
   async getMap(
     path: string,
     query?: Record<string, string>
   ): Promise<ApiResult<Record<string, unknown>>> {
     const res = await this.request("GET", path, { query });
-    if (!res)
-      return { success: false, data: null, error: "Unable to connect." };
-    if (!res.ok)
-      return { success: false, data: null, error: this.friendlyError(res) };
-    const json = (await res.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >;
-    const data = (json.data ?? json) as Record<string, unknown>;
-    return { success: true, data, error: null };
+    return this.makeResult(res, (data) =>
+      data && typeof data === "object" && !Array.isArray(data)
+        ? (data as Record<string, unknown>)
+        : null
+    );
   }
 
   async getList(
@@ -144,20 +176,9 @@ export class HttpClient {
     query?: Record<string, string>
   ): Promise<ApiResult<unknown[]>> {
     const res = await this.request("GET", path, { query });
-    if (!res)
-      return { success: false, data: null, error: "Unable to connect." };
-    if (!res.ok)
-      return { success: false, data: null, error: this.friendlyError(res) };
-    const json = (await res.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >;
-    const data = Array.isArray(json.data)
-      ? json.data
-      : Array.isArray(json)
-        ? json
-        : [];
-    return { success: true, data, error: null };
+    return this.makeResult(res, (data) =>
+      Array.isArray(data) ? data : null
+    );
   }
 
   async postMap(
@@ -165,16 +186,11 @@ export class HttpClient {
     body?: unknown
   ): Promise<ApiResult<Record<string, unknown>>> {
     const res = await this.request("POST", path, { body });
-    if (!res)
-      return { success: false, data: null, error: "Unable to connect." };
-    if (!res.ok)
-      return { success: false, data: null, error: this.friendlyError(res) };
-    const json = (await res.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >;
-    const data = (json.data ?? json) as Record<string, unknown>;
-    return { success: true, data, error: null };
+    return this.makeResult(res, (data) =>
+      data && typeof data === "object" && !Array.isArray(data)
+        ? (data as Record<string, unknown>)
+        : null
+    );
   }
 
   async putMap(
@@ -182,16 +198,11 @@ export class HttpClient {
     body?: unknown
   ): Promise<ApiResult<Record<string, unknown>>> {
     const res = await this.request("PUT", path, { body });
-    if (!res)
-      return { success: false, data: null, error: "Unable to connect." };
-    if (!res.ok)
-      return { success: false, data: null, error: this.friendlyError(res) };
-    const json = (await res.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >;
-    const data = (json.data ?? json) as Record<string, unknown>;
-    return { success: true, data, error: null };
+    return this.makeResult(res, (data) =>
+      data && typeof data === "object" && !Array.isArray(data)
+        ? (data as Record<string, unknown>)
+        : null
+    );
   }
 
   async patchMap(
@@ -199,16 +210,11 @@ export class HttpClient {
     body?: unknown
   ): Promise<ApiResult<Record<string, unknown>>> {
     const res = await this.request("PATCH", path, { body });
-    if (!res)
-      return { success: false, data: null, error: "Unable to connect." };
-    if (!res.ok)
-      return { success: false, data: null, error: this.friendlyError(res) };
-    const json = (await res.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >;
-    const data = (json.data ?? json) as Record<string, unknown>;
-    return { success: true, data, error: null };
+    return this.makeResult(res, (data) =>
+      data && typeof data === "object" && !Array.isArray(data)
+        ? (data as Record<string, unknown>)
+        : null
+    );
   }
 
   async deleteVoid(
