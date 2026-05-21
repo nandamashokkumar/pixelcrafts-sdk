@@ -22,4 +22,10 @@ export const billing = {
   }): Promise<ApiResult<Record<string, unknown>>> {
     return http.postMap(Endpoints.billingVerify, body);
   },
+  cancelSubscription(body: {
+    razorpaySubscriptionId: string;
+    cancelAtCycleEnd?: boolean;
+  }): Promise<ApiResult<Record<string, unknown>>> {
+    return http.postMap(Endpoints.billingCancel, body);
+  },
 };

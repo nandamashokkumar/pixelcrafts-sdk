@@ -11,6 +11,7 @@ export const Endpoints = {
   billingPlans: "/billing/plans",
   billingSubscribe: "/billing/razorpay/subscriptions",
   billingVerify: "/billing/razorpay/subscriptions/verify",
+  billingCancel: "/billing/razorpay/subscriptions/cancel",
   supportTickets: "/support/tickets",
   supportTicketDetail: (id: string) => `/support/tickets/${id}`,
   supportTicketMessages: (id: string) => `/support/tickets/${id}/messages`,
