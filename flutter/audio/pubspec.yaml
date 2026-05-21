@@ -1,0 +1,40 @@
+name: pixelcrafts_audio
+description: Client SDK for the pixelcrafts audio + STT surface. Mic permission, recording (with auto-VAD), authenticated multipart upload to a transcription endpoint, transcript + cost return. Extracted from mintly-app's voice_service so every brand app gets the same audio plumbing.
+version: 0.1.0
+homepage: https://github.com/pixelcrafts-app/pixelcrafts-sdk
+repository: https://github.com/pixelcrafts-app/pixelcrafts-sdk
+issue_tracker: https://github.com/pixelcrafts-app/pixelcrafts-sdk/issues
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Native audio capture. Industry-standard Flutter wrapper around iOS
+  # AVAudioRecorder + Android MediaRecorder + web Web Audio. Battle-tested
+  # in mintly today.
+  record: ^6.0.0
+
+  # Mic permission flow. Same wrapper every brand app uses.
+  permission_handler: ^11.3.1
+
+  # Tmp file location for recordings before upload. App-private directory
+  # on iOS, cache dir on Android. Auto-cleaned by the OS under pressure.
+  path_provider: ^2.1.5
+
+  # Multipart upload to the STT endpoint. We use the stdlib http package
+  # (not dio) to avoid a transitive dep clash with consumers that pin a
+  # different dio major.
+  http: ^1.2.0
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: false

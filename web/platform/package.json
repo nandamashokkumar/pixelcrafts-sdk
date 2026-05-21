@@ -1,0 +1,35 @@
+{
+  "name": "@pixelcrafts/platform",
+  "version": "1.0.0",
+  "description": "PixelCrafts Platform SDK — auth, billing, support, sync, legal, push",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --out-dir dist --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --out-dir dist --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "pixelcrafts",
+    "sdk",
+    "auth",
+    "billing"
+  ],
+  "author": "PixelCrafts",
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  }
+}

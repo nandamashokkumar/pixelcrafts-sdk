@@ -1,0 +1,34 @@
+# Flutter / Dart — match any package under flutter/* (auth, audio, future)
+flutter/*/.dart_tool/
+flutter/*/.packages
+flutter/*/.pub-cache/
+flutter/*/.pub/
+flutter/*/build/
+flutter/*/pubspec.lock
+flutter/*/.flutter-plugins
+flutter/*/.flutter-plugins-dependencies
+flutter/*/coverage/
+
+# Node / TypeScript — match any package under web/* (auth, future)
+web/*/node_modules/
+web/*/dist/
+web/*/.next/
+web/*/.turbo/
+web/*/coverage/
+web/*/*.log
+web/*/.DS_Store
+web/*/pnpm-lock.yaml
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# Claude session artifacts
+.claude/audit-cache.json
+.claude/progress.md
+.claude/verify-state.json
+.claude/agent-traffic.log
+.claude/settings.local.json

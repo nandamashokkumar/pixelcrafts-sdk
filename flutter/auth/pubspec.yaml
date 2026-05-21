@@ -1,0 +1,43 @@
+name: pixelcrafts_auth
+description: Client SDK for the pixelcrafts central auth gateway (auth.pixelcrafts.app). Firebase login → platform JWT exchange → secure storage → Bearer attach → single-flight 401 refresh. One opinionated surface, used by every pixelcrafts mobile app.
+version: 0.1.0
+homepage: https://github.com/pixelcrafts-app/pixelcrafts-sdk
+repository: https://github.com/pixelcrafts-app/pixelcrafts-sdk
+issue_tracker: https://github.com/pixelcrafts-app/pixelcrafts-sdk/issues
+publish_to: none
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase Auth — every supported provider goes through Firebase first.
+  firebase_auth: ^5.3.0
+
+  # Social providers — each maps to a Firebase AuthCredential.
+  google_sign_in: ^6.2.0
+  sign_in_with_apple: ^6.1.0
+
+  # HTTP client used for the gateway exchange + the interceptor that
+  # consumers wire into their own Dio instances.
+  dio: ^5.7.0
+
+  # Token storage. Encrypted on both platforms — iOS Keychain, Android
+  # encryptedSharedPreferences. Never use plain SharedPreferences for
+  # the platform JWT.
+  flutter_secure_storage: ^9.2.2
+
+  # Non-sensitive user-info cache (email, displayName, role). Mirrors
+  # the web SDK's localStorage cache so the SDK behavior is uniform.
+  shared_preferences: ^2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  # No assets — this is a pure-Dart code package.
