@@ -21,22 +21,128 @@ class HttpClient {
   DateTime? _tokenCachedAt;
   static const _tokenCacheDuration = Duration(minutes: 55);
 
+  /// Deduplicates concurrent token refreshes. All callers wait on the
+  /// same in-flight refresh instead of triggering independent ones.
+  Completer<String?>? _refreshCompleter;
+
   void clearTokenCache() {
     _cachedToken = null;
     _tokenCachedAt = null;
   }
 
-  // ─── Public request helpers ────────────────────────────────────────────────
+  // ─── Generic request helpers ───────────────────────────────────────────────
+
+  /// Generic GET that parses `data` into a typed model.
+  Future<ApiResult<T>> get<T>(
+    String path, {
+    Map<String, String>? queryParams,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final result = await _requestMap('GET', path, queryParams: queryParams);
+    if (!result.success || result.data == null) {
+      return (success: false, data: null, error: result.error);
+    }
+    try {
+      return (success: true, data: fromJson(result.data!), error: null);
+    } catch (e) {
+      _log('Parse error in GET $path: $e');
+      return (success: false, data: null, error: 'Parse error');
+    }
+  }
+
+  /// Generic GET that parses `data` (List) into typed models.
+  Future<ApiResult<List<T>>> getList<T>(
+    String path, {
+    Map<String, String>? queryParams,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final result = await _requestRawList('GET', path, queryParams: queryParams);
+    if (!result.success || result.data == null) {
+      return (success: false, data: null, error: result.error);
+    }
+    try {
+      final items = result.data!
+          .whereType<Map<String, dynamic>>()
+          .map(fromJson)
+          .toList();
+      return (success: true, data: items, error: null);
+    } catch (e) {
+      _log('Parse error in GET $path: $e');
+      return (success: false, data: null, error: 'Parse error');
+    }
+  }
+
+  /// Generic POST that parses `data` into a typed model.
+  Future<ApiResult<T>> post<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final result = await _requestMap('POST', path, body: body);
+    if (!result.success || result.data == null) {
+      return (success: false, data: null, error: result.error);
+    }
+    try {
+      return (success: true, data: fromJson(result.data!), error: null);
+    } catch (e) {
+      _log('Parse error in POST $path: $e');
+      return (success: false, data: null, error: 'Parse error');
+    }
+  }
+
+  /// Generic PUT that parses `data` into a typed model.
+  Future<ApiResult<T>> put<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final result = await _requestMap('PUT', path, body: body);
+    if (!result.success || result.data == null) {
+      return (success: false, data: null, error: result.error);
+    }
+    try {
+      return (success: true, data: fromJson(result.data!), error: null);
+    } catch (e) {
+      _log('Parse error in PUT $path: $e');
+      return (success: false, data: null, error: 'Parse error');
+    }
+  }
+
+  /// Generic PATCH that parses `data` into a typed model.
+  Future<ApiResult<T>> patch<T>(
+    String path, {
+    Map<String, dynamic>? body,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) async {
+    final result = await _requestMap('PATCH', path, body: body);
+    if (!result.success || result.data == null) {
+      return (success: false, data: null, error: result.error);
+    }
+    try {
+      return (success: true, data: fromJson(result.data!), error: null);
+    } catch (e) {
+      _log('Parse error in PATCH $path: $e');
+      return (success: false, data: null, error: 'Parse error');
+    }
+  }
+
+  /// DELETE with no body parsing.
+  Future<ApiResult<void>> delete(
+    String path, {
+    Map<String, String>? queryParams,
+  }) => _requestVoid('DELETE', path, queryParams: queryParams);
+
+  // ─── Legacy untyped helpers (for backwards compat during migration) ─────────
 
   Future<ApiResult<Map<String, dynamic>>> getMap(
     String path, {
     Map<String, String>? queryParams,
   }) => _requestMap('GET', path, queryParams: queryParams);
 
-  Future<ApiResult<List<dynamic>>> getList(
+  Future<ApiResult<List<dynamic>>> getRawList(
     String path, {
     Map<String, String>? queryParams,
-  }) => _requestList('GET', path, queryParams: queryParams);
+  }) => _requestRawList('GET', path, queryParams: queryParams);
 
   Future<ApiResult<Map<String, dynamic>>> postMap(
     String path, {
@@ -67,7 +173,7 @@ class HttpClient {
     String? body,
   }) => _execute(method, _buildUri(path, queryParams: queryParams), body: body);
 
-  // ─── Multipart upload ──────────────────────────────────────────────────────
+  // ─── Multipart upload (returns untyped map; caller parses) ─────────────────
 
   Future<ApiResult<Map<String, dynamic>>> uploadMultipart(
     String path,
@@ -89,7 +195,9 @@ class HttpClient {
         final response = await http.Response.fromStream(streamed);
 
         if (response.statusCode == 401 && attempt == 0) {
-          if (await _handleTokenExpiry()) continue;
+          clearTokenCache();
+          final newToken = await refreshToken();
+          if (newToken != null) continue;
           return (success: false, data: null, error: 'Session expired.');
         }
         if (response.statusCode >= 500 && attempt == 0) {
@@ -122,6 +230,22 @@ class HttpClient {
       }
     }
     return (success: false, data: null, error: 'Upload failed after retries.');
+  }
+
+  // ─── DNS reachability check ────────────────────────────────────────────────
+
+  /// Returns `true` if the base host is reachable (HEAD /).
+  /// Useful before showing offline UI.
+  Future<bool> isReachable() async {
+    try {
+      final uri = Uri.parse(PixelCraftsConfig.baseUrl);
+      final response = await _client
+          .head(uri)
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode < 500;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ─── Internal implementation ───────────────────────────────────────────────
@@ -157,7 +281,7 @@ class HttpClient {
     }
   }
 
-  Future<ApiResult<List<dynamic>>> _requestList(
+  Future<ApiResult<List<dynamic>>> _requestRawList(
     String method,
     String path, {
     Map<String, String>? queryParams,
@@ -209,28 +333,42 @@ class HttpClient {
     );
   }
 
+  /// Read token from cache or tokenProvider.
+  Future<String?> _getToken() async {
+    final now = DateTime.now();
+    if (_cachedToken != null &&
+        _tokenCachedAt != null &&
+        now.difference(_tokenCachedAt!) < _tokenCacheDuration) {
+      return _cachedToken;
+    }
+    final tokenProvider = PixelCraftsConfig.tokenProvider;
+    if (tokenProvider == null) return null;
+    try {
+      final token = await tokenProvider();
+      if (token != null) {
+        _cachedToken = token;
+        _tokenCachedAt = now;
+      }
+      return token;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<Map<String, String>> _buildHeaders() async {
     final headers = <String, String>{
       'X-App-Id': PixelCraftsConfig.appId,
       'x-api-key': PixelCraftsConfig.apiKey,
       'Content-Type': 'application/json',
+      if (PixelCraftsConfig.appVersion != null)
+        'X-App-Version': PixelCraftsConfig.appVersion!,
+      if (PixelCraftsConfig.platform != null)
+        'X-Platform': PixelCraftsConfig.platform!,
     };
 
-    final tokenProvider = PixelCraftsConfig.tokenProvider;
-    if (tokenProvider != null) {
-      final now = DateTime.now();
-      if (_cachedToken != null &&
-          _tokenCachedAt != null &&
-          now.difference(_tokenCachedAt!) < _tokenCacheDuration) {
-        headers['Authorization'] = 'Bearer $_cachedToken';
-      } else {
-        final token = await tokenProvider();
-        if (token != null) {
-          _cachedToken = token;
-          _tokenCachedAt = now;
-          headers['Authorization'] = 'Bearer $token';
-        }
-      }
+    final token = await _getToken();
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
     }
     return headers;
   }
@@ -243,6 +381,7 @@ class HttpClient {
     for (var attempt = 0; attempt < 2; attempt++) {
       try {
         final headers = await _buildHeaders();
+        _log('$method ${uri.toString()}');
         final http.Response response;
         switch (method) {
           case 'GET':
@@ -259,8 +398,11 @@ class HttpClient {
             return null;
         }
 
+        _log('  → ${response.statusCode}');
         if (response.statusCode == 401 && attempt == 0) {
-          if (await _handleTokenExpiry()) continue;
+          clearTokenCache();
+          final newToken = await refreshToken();
+          if (newToken != null) continue;
           return response;
         }
         if (response.statusCode >= 500 && attempt == 0) {
@@ -287,19 +429,51 @@ class HttpClient {
     return null;
   }
 
-  Future<bool> _handleTokenExpiry() async {
+  /// Public refresh entry-point — deduplicated. All callers wait on the
+  /// same in-flight refresh instead of triggering independent ones.
+  /// Returns the new token, or null if refresh failed.
+  Future<String?> refreshToken() async {
+    // If a refresh is already in-flight, wait for it.
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
+
+    _refreshCompleter = Completer<String?>();
+
+    try {
+      final result = await _performRefresh();
+      _refreshCompleter!.complete(result);
+      return result;
+    } catch (e) {
+      _refreshCompleter!.complete(null);
+      return null;
+    } finally {
+      _refreshCompleter = null;
+    }
+  }
+
+  /// Actual refresh logic — clears cache, calls forceRefresher, updates cache.
+  Future<String?> _performRefresh() async {
     clearTokenCache();
     final forceRefresher = PixelCraftsConfig.tokenForceRefresher;
     if (forceRefresher != null) {
-      final newToken = await forceRefresher();
-      if (newToken != null) {
-        _cachedToken = newToken;
-        _tokenCachedAt = DateTime.now();
-        return true;
+      try {
+        final newToken = await forceRefresher();
+        if (newToken != null) {
+          _cachedToken = newToken;
+          _tokenCachedAt = DateTime.now();
+          return newToken;
+        }
+      } catch (_) {
+        // refresher failed — fall through
       }
     }
-    _fireSessionExpired();
-    return false;
+    return null;
+  }
+
+  Future<bool> _handleTokenExpiry() async {
+    final token = await refreshToken();
+    return token != null;
   }
 
   void _fireSessionExpired() {
@@ -342,5 +516,12 @@ class HttpClient {
       }
     } catch (_) {}
     return null;
+  }
+
+  void _log(String message) {
+    if (kDebugMode && PixelCraftsConfig.debugLogging) {
+      // ignore: avoid_print
+      print('[PixelCraftsPlatform] $message');
+    }
   }
 }
