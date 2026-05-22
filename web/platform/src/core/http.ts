@@ -61,7 +61,6 @@ export class HttpClient {
         });
         if (res.status === 401 && attempt === 0) {
           if (await this.handleTokenExpiry()) continue;
-          this.fireSessionExpired();
           return res;
         }
         if (res.status >= 500 && attempt === 0) {
