@@ -6,6 +6,7 @@ export class HttpClient {
   private tokenCachedAt = 0;
   private readonly cacheMs = 55 * 60 * 1000;
   private handlingSessionExpiry = false;
+  private refreshPromise: Promise<string | null> | null = null;
 
   get baseUrl(): string {
     return getConfig().baseUrl;
@@ -16,6 +17,26 @@ export class HttpClient {
     this.tokenCachedAt = 0;
   }
 
+  /** Read token from cache or tokenProvider. */
+  private async getToken(): Promise<string | null> {
+    const now = Date.now();
+    if (this.cachedToken && now - this.tokenCachedAt < this.cacheMs) {
+      return this.cachedToken;
+    }
+    const provider = getConfig().tokenProvider;
+    if (!provider) return null;
+    try {
+      const token = await provider();
+      if (token) {
+        this.cachedToken = token;
+        this.tokenCachedAt = now;
+      }
+      return token;
+    } catch {
+      return null;
+    }
+  }
+
   async headers(): Promise<Record<string, string>> {
     const cfg = getConfig();
     const h: Record<string, string> = {
@@ -23,22 +44,8 @@ export class HttpClient {
       "x-api-key": cfg.apiKey,
       "Content-Type": "application/json",
     };
-    const now = Date.now();
-    if (this.cachedToken && now - this.tokenCachedAt < this.cacheMs) {
-      h["Authorization"] = `Bearer ${this.cachedToken}`;
-    } else {
-      try {
-        const token = await cfg.tokenProvider();
-        if (token) {
-          this.cachedToken = token;
-          this.tokenCachedAt = now;
-          h["Authorization"] = `Bearer ${token}`;
-        }
-      } catch {
-        // tokenProvider failed — proceed without auth header; the request
-        // will likely 401 and trigger the refresh/retry path.
-      }
-    }
+    const token = await this.getToken();
+    if (token) h["Authorization"] = `Bearer ${token}`;
     return h;
   }
 
@@ -60,7 +67,9 @@ export class HttpClient {
           signal: AbortSignal.timeout(20000),
         });
         if (res.status === 401 && attempt === 0) {
-          if (await this.handleTokenExpiry()) continue;
+          this.clearTokenCache();
+          const newToken = await this.refreshToken();
+          if (newToken) continue;
           return res;
         }
         if (res.status >= 500 && attempt === 0) {
@@ -79,9 +88,19 @@ export class HttpClient {
     return null;
   }
 
-  /** Public refresh entry-point — apps can call this when their own
-   *  fetch() hits 401 and they need a fresh token to retry. */
+  /** Public refresh entry-point — deduplicated. All callers wait on the same
+   *  promise when a refresh is already in-flight. */
   async refreshToken(): Promise<string | null> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+    this.refreshPromise = this.performRefresh();
+    const result = await this.refreshPromise;
+    this.refreshPromise = null;
+    return result;
+  }
+
+  private async performRefresh(): Promise<string | null> {
     this.clearTokenCache();
     const refresher = getConfig().tokenForceRefresher;
     if (refresher) {
@@ -97,11 +116,6 @@ export class HttpClient {
       }
     }
     return null;
-  }
-
-  private async handleTokenExpiry(): Promise<boolean> {
-    const token = await this.refreshToken();
-    return token !== null;
   }
 
   private fireSessionExpired(): void {
@@ -135,9 +149,8 @@ export class HttpClient {
     res: Response
   ): Promise<{ ok: true; data: unknown } | { ok: false; error: string }> {
     const json = await res.json().catch(() => ({}));
-    const data = json && typeof json === "object" && "data" in json
-      ? json.data
-      : json;
+    const data =
+      json && typeof json === "object" && "data" in json ? json.data : json;
     return { ok: true, data };
   }
 
@@ -153,7 +166,11 @@ export class HttpClient {
       if (!parsed.ok) return { success: false, data: null, error: parsed.error };
       const extracted = extract(parsed.data);
       if (extracted === null)
-        return { success: false, data: null, error: "Unexpected response format." };
+        return {
+          success: false,
+          data: null,
+          error: "Unexpected response format.",
+        };
       return { success: true, data: extracted, error: null };
     }) as unknown as ApiResult<T>;
   }
