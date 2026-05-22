@@ -4,7 +4,8 @@ class PixelCraftsConfig {
 
   static String? _appId;
   static String? _apiKey;
-  static String? _baseUrl;
+  static String? _authBaseUrl;
+  static String? _apiBaseUrl;
   static Future<String?> Function()? _tokenProvider;
   static Future<String?> Function()? _tokenForceRefresher;
   static void Function()? _onSessionExpired;
@@ -15,8 +16,11 @@ class PixelCraftsConfig {
   /// API key sent as x-api-key header.
   static String get apiKey => _apiKey!;
 
-  /// Base URL of the PixelCrafts gateway (e.g. 'https://auth.pixelcrafts.app/v1').
-  static String get baseUrl => _baseUrl!;
+  /// Base URL for auth and billing endpoints (e.g. 'https://auth.pixelcrafts.app/v1').
+  static String get authBaseUrl => _authBaseUrl ?? _apiBaseUrl!;
+
+  /// Base URL for all other endpoints (sync, push, support, user, legal, storage, etc.).
+  static String get apiBaseUrl => _apiBaseUrl!;
 
   /// Callback that returns the current platform JWT.
   static Future<String?> Function()? get tokenProvider => _tokenProvider;
@@ -28,17 +32,28 @@ class PixelCraftsConfig {
   static void Function()? get onSessionExpired => _onSessionExpired;
 
   /// Initialize the SDK. Call once in main() before any API usage.
+  ///
+  /// For single-backend setups, pass [baseUrl] only.
+  /// For split auth/api setups, pass [authBaseUrl] and [apiBaseUrl].
   static void init({
     required String appId,
     required String apiKey,
-    required String baseUrl,
+    String? baseUrl,
+    String? authBaseUrl,
+    String? apiBaseUrl,
     required Future<String?> Function() tokenProvider,
     Future<String?> Function()? tokenForceRefresher,
     void Function()? onSessionExpired,
   }) {
+    if (baseUrl == null && (authBaseUrl == null || apiBaseUrl == null)) {
+      throw ArgumentError(
+        'Either baseUrl OR both authBaseUrl + apiBaseUrl must be provided.',
+      );
+    }
     _appId = appId;
     _apiKey = apiKey;
-    _baseUrl = baseUrl;
+    _authBaseUrl = authBaseUrl ?? baseUrl;
+    _apiBaseUrl = apiBaseUrl ?? baseUrl;
     _tokenProvider = tokenProvider;
     _tokenForceRefresher = tokenForceRefresher;
     _onSessionExpired = onSessionExpired;
@@ -48,7 +63,8 @@ class PixelCraftsConfig {
   static void reset() {
     _appId = null;
     _apiKey = null;
-    _baseUrl = null;
+    _authBaseUrl = null;
+    _apiBaseUrl = null;
     _tokenProvider = null;
     _tokenForceRefresher = null;
     _onSessionExpired = null;

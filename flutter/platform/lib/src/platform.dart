@@ -9,12 +9,25 @@ import 'core/config.dart';
 
 /// PixelCrafts Platform SDK — unified API client.
 ///
-/// Initialize once:
+/// Initialize once (single backend):
 /// ```dart
 /// PixelCraftsPlatform.init(
 ///   appId: 'verbloom',
 ///   apiKey: 'pk_...',
 ///   baseUrl: 'https://auth.pixelcrafts.app/v1',
+///   tokenProvider: () => authService.getIdToken(),
+///   tokenForceRefresher: () => authService.getIdToken(forceRefresh: true),
+///   onSessionExpired: () => router.go('/login'),
+/// );
+/// ```
+///
+/// Initialize once (split auth + api backends):
+/// ```dart
+/// PixelCraftsPlatform.init(
+///   appId: 'verbloom',
+///   apiKey: 'pk_...',
+///   authBaseUrl: 'https://auth.pixelcrafts.app/v1',
+///   apiBaseUrl: 'https://api.pixelcrafts.app/api/v1',
 ///   tokenProvider: () => authService.getIdToken(),
 ///   tokenForceRefresher: () => authService.getIdToken(forceRefresh: true),
 ///   onSessionExpired: () => router.go('/login'),
@@ -31,10 +44,15 @@ class PixelCraftsPlatform {
   static final PixelCraftsPlatform instance = PixelCraftsPlatform._();
 
   /// Initialize the SDK. Must be called before any API usage.
+  ///
+  /// For split backends pass [authBaseUrl] + [apiBaseUrl].
+  /// For a single backend pass [baseUrl] only.
   static void init({
     required String appId,
     required String apiKey,
-    required String baseUrl,
+    String? baseUrl,
+    String? authBaseUrl,
+    String? apiBaseUrl,
     required Future<String?> Function() tokenProvider,
     Future<String?> Function()? tokenForceRefresher,
     void Function()? onSessionExpired,
@@ -42,6 +60,8 @@ class PixelCraftsPlatform {
     appId: appId,
     apiKey: apiKey,
     baseUrl: baseUrl,
+    authBaseUrl: authBaseUrl,
+    apiBaseUrl: apiBaseUrl,
     tokenProvider: tokenProvider,
     tokenForceRefresher: tokenForceRefresher,
     onSessionExpired: onSessionExpired,

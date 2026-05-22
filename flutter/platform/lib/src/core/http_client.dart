@@ -237,7 +237,7 @@ class HttpClient {
   /// Useful before showing offline UI.
   Future<bool> isReachable() async {
     try {
-      final uri = Uri.parse(PixelCraftsConfig.baseUrl);
+      final uri = Uri.parse(PixelCraftsConfig.apiBaseUrl);
       final response = await _client
           .head(uri)
           .timeout(const Duration(seconds: 5));
@@ -326,8 +326,17 @@ class HttpClient {
     }
   }
 
+  /// Auth and billing endpoints route to [PixelCraftsConfig.authBaseUrl];
+  /// everything else routes to [PixelCraftsConfig.apiBaseUrl].
+  String _resolveBaseUrl(String path) {
+    if (path.startsWith('/auth/') || path.startsWith('/billing/')) {
+      return PixelCraftsConfig.authBaseUrl;
+    }
+    return PixelCraftsConfig.apiBaseUrl;
+  }
+
   Uri _buildUri(String path, {Map<String, String>? queryParams}) {
-    return Uri.parse('${PixelCraftsConfig.baseUrl}$path').replace(
+    return Uri.parse('${_resolveBaseUrl(path)}$path').replace(
       queryParameters: queryParams != null && queryParams.isNotEmpty ? queryParams : null,
     );
   }
