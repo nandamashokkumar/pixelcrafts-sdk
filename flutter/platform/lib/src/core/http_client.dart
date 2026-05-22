@@ -16,7 +16,6 @@ class HttpClient {
 
   final http.Client _client = http.Client();
 
-  bool _isHandlingSessionExpiry = false;
   String? _cachedToken;
   DateTime? _tokenCachedAt;
   static const _tokenCacheDuration = Duration(minutes: 55);
@@ -469,18 +468,6 @@ class HttpClient {
       }
     }
     return null;
-  }
-
-  Future<bool> _handleTokenExpiry() async {
-    final token = await refreshToken();
-    return token != null;
-  }
-
-  void _fireSessionExpired() {
-    if (_isHandlingSessionExpiry) return;
-    _isHandlingSessionExpiry = true;
-    PixelCraftsConfig.onSessionExpired?.call();
-    Future.delayed(const Duration(seconds: 5), () => _isHandlingSessionExpiry = false);
   }
 
   String _friendlyError(http.Response response) {
