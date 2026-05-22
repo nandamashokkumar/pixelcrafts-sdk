@@ -1,0 +1,38 @@
+{
+  "name": "@pixelcrafts/jwt-verify",
+  "version": "1.0.0",
+  "description": "Shared platform JWT verification — used by api-auth gateway and brand backends",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --out-dir dist --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --out-dir dist --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "pixelcrafts",
+    "jwt",
+    "auth",
+    "jose"
+  ],
+  "author": "PixelCrafts",
+  "license": "MIT",
+  "dependencies": {
+    "jose": "^6.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  }
+}
