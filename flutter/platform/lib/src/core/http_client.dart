@@ -326,10 +326,16 @@ class HttpClient {
     }
   }
 
-  /// Auth and billing endpoints route to [PixelCraftsConfig.authBaseUrl];
-  /// everything else routes to [PixelCraftsConfig.apiBaseUrl].
+  /// Auth, billing, user, push, support, and legal endpoints route to
+  /// [PixelCraftsConfig.authBaseUrl]; everything else routes to
+  /// [PixelCraftsConfig.apiBaseUrl].
   String _resolveBaseUrl(String path) {
-    if (path.startsWith('/auth/') || path.startsWith('/billing/')) {
+    if (path.startsWith('/auth/') ||
+        path.startsWith('/billing/') ||
+        path.startsWith('/user/') ||
+        path.startsWith('/push/') ||
+        path.startsWith('/support/') ||
+        path.startsWith('/legal/')) {
       return PixelCraftsConfig.authBaseUrl;
     }
     return PixelCraftsConfig.apiBaseUrl;
