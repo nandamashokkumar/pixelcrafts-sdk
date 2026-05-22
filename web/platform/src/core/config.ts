@@ -1,7 +1,12 @@
 export interface PlatformConfig {
   appId: string;
   apiKey: string;
-  baseUrl: string;
+  /** Legacy single base URL. Use `authBaseUrl` + `apiBaseUrl` for dual-routing. */
+  baseUrl?: string;
+  /** Gateway base URL for auth, billing, user, push, support, legal. */
+  authBaseUrl?: string;
+  /** API base URL for sync, learning, analytics, catalog. */
+  apiBaseUrl?: string;
   tokenProvider: () => Promise<string | null>;
   tokenForceRefresher?: () => Promise<string | null>;
   onSessionExpired?: () => void;

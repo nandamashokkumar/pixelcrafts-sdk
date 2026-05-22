@@ -5,11 +5,31 @@ export class HttpClient {
   private cachedToken: string | null = null;
   private tokenCachedAt = 0;
   private readonly cacheMs = 55 * 60 * 1000;
-  private handlingSessionExpiry = false;
   private refreshPromise: Promise<string | null> | null = null;
 
-  get baseUrl(): string {
-    return getConfig().baseUrl;
+  /** Resolve the correct base URL for a given path.
+   *  Auth/billing/user/push/support/legal → authBaseUrl (gateway)
+   *  Sync/learning/analytics → apiBaseUrl (api-mobile)
+   *  Falls back to legacy `baseUrl` for backward compatibility. */
+  private resolveBaseUrl(path: string): string {
+    const cfg = getConfig();
+    const authPrefixes = ["/auth/", "/billing/", "/user/", "/push/", "/support/", "/legal/"];
+    const apiPrefixes = ["/sync/", "/learning/", "/analytics/", "/catalog/"];
+
+    if (authPrefixes.some((p) => path.startsWith(p))) {
+      if (cfg.authBaseUrl) return cfg.authBaseUrl;
+      if (cfg.baseUrl) return cfg.baseUrl;
+      throw new Error("PixelCraftsPlatform: authBaseUrl or baseUrl is required.");
+    }
+
+    if (apiPrefixes.some((p) => path.startsWith(p))) {
+      if (cfg.apiBaseUrl) return cfg.apiBaseUrl;
+      if (cfg.baseUrl) return cfg.baseUrl;
+      throw new Error("PixelCraftsPlatform: apiBaseUrl or baseUrl is required.");
+    }
+
+    // Default: prefer authBaseUrl (most endpoints are gateway), then fallback to baseUrl
+    return cfg.authBaseUrl ?? cfg.baseUrl ?? "";
   }
 
   clearTokenCache(): void {
@@ -54,7 +74,7 @@ export class HttpClient {
     path: string,
     { query, body }: { query?: Record<string, string>; body?: unknown } = {}
   ): Promise<Response | null> {
-    const url = new URL(path, this.baseUrl);
+    const url = new URL(path, this.resolveBaseUrl(path));
     if (query) {
       Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
     }
@@ -116,13 +136,6 @@ export class HttpClient {
       }
     }
     return null;
-  }
-
-  private fireSessionExpired(): void {
-    if (this.handlingSessionExpiry) return;
-    this.handlingSessionExpiry = true;
-    getConfig().onSessionExpired?.();
-    setTimeout(() => (this.handlingSessionExpiry = false), 5000);
   }
 
   private friendlyError(res: Response): string {
