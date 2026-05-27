@@ -327,7 +327,8 @@ class HttpClient {
   }
 
   /// Auth, billing, user, push, support, and legal endpoints route to
-  /// [PixelCraftsConfig.authBaseUrl]; everything else routes to
+  /// [PixelCraftsConfig.authBaseUrl]; AI endpoints route to
+  /// [PixelCraftsConfig.aiBaseUrl]; everything else routes to
   /// [PixelCraftsConfig.apiBaseUrl].
   String _resolveBaseUrl(String path) {
     if (path.startsWith('/auth/') ||
@@ -337,6 +338,15 @@ class HttpClient {
         path.startsWith('/support/') ||
         path.startsWith('/legal/')) {
       return PixelCraftsConfig.authBaseUrl;
+    }
+    if (path.startsWith('/jobs/') ||
+        path.startsWith('/metering/') ||
+        path.startsWith('/context/') ||
+        path.startsWith('/agent/') ||
+        path.startsWith('/tools/') ||
+        path.startsWith('/queue/') ||
+        path.startsWith('/observability/')) {
+      return PixelCraftsConfig.aiBaseUrl;
     }
     return PixelCraftsConfig.apiBaseUrl;
   }

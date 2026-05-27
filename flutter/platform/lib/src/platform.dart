@@ -5,6 +5,11 @@ import 'modules/sync.dart';
 import 'modules/legal.dart';
 import 'modules/push.dart';
 import 'modules/storage.dart';
+import 'modules/ai.dart';
+import 'modules/agent.dart';
+import 'modules/context.dart';
+import 'modules/metering.dart';
+import 'modules/queue.dart';
 import 'core/config.dart';
 
 /// PixelCrafts Platform SDK — unified API client.
@@ -53,6 +58,7 @@ class PixelCraftsPlatform {
     String? baseUrl,
     String? authBaseUrl,
     String? apiBaseUrl,
+    String? aiBaseUrl,
     required Future<String?> Function() tokenProvider,
     Future<String?> Function()? tokenForceRefresher,
     void Function()? onSessionExpired,
@@ -62,6 +68,7 @@ class PixelCraftsPlatform {
     baseUrl: baseUrl,
     authBaseUrl: authBaseUrl,
     apiBaseUrl: apiBaseUrl,
+    aiBaseUrl: aiBaseUrl,
     tokenProvider: tokenProvider,
     tokenForceRefresher: tokenForceRefresher,
     onSessionExpired: onSessionExpired,
@@ -74,4 +81,9 @@ class PixelCraftsPlatform {
   final legal = const LegalModule();
   final push = const PushModule();
   final storage = const StorageModule();
+  final ai = const AiModule();
+  final agent = const AgentModule();
+  final context = const ContextModule();
+  final metering = const MeteringModule();
+  final queue = const QueueModule();
 }

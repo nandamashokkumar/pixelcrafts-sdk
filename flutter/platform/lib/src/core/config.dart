@@ -6,6 +6,7 @@ class PixelCraftsConfig {
   static String? _apiKey;
   static String? _authBaseUrl;
   static String? _apiBaseUrl;
+  static String? _aiBaseUrl;
   static Future<String?> Function()? _tokenProvider;
   static Future<String?> Function()? _tokenForceRefresher;
   static void Function()? _onSessionExpired;
@@ -21,6 +22,9 @@ class PixelCraftsConfig {
 
   /// Base URL for all other endpoints (sync, push, support, user, legal, storage, etc.).
   static String get apiBaseUrl => _apiBaseUrl!;
+
+  /// Base URL for AI endpoints (jobs, metering, context, agent, queue).
+  static String get aiBaseUrl => _aiBaseUrl ?? _apiBaseUrl!;
 
   /// Callback that returns the current platform JWT.
   static Future<String?> Function()? get tokenProvider => _tokenProvider;
@@ -41,6 +45,7 @@ class PixelCraftsConfig {
     String? baseUrl,
     String? authBaseUrl,
     String? apiBaseUrl,
+    String? aiBaseUrl,
     required Future<String?> Function() tokenProvider,
     Future<String?> Function()? tokenForceRefresher,
     void Function()? onSessionExpired,
@@ -54,6 +59,7 @@ class PixelCraftsConfig {
     _apiKey = apiKey;
     _authBaseUrl = authBaseUrl ?? baseUrl;
     _apiBaseUrl = apiBaseUrl ?? baseUrl;
+    _aiBaseUrl = aiBaseUrl;
     _tokenProvider = tokenProvider;
     _tokenForceRefresher = tokenForceRefresher;
     _onSessionExpired = onSessionExpired;
@@ -65,6 +71,7 @@ class PixelCraftsConfig {
     _apiKey = null;
     _authBaseUrl = null;
     _apiBaseUrl = null;
+    _aiBaseUrl = null;
     _tokenProvider = null;
     _tokenForceRefresher = null;
     _onSessionExpired = null;

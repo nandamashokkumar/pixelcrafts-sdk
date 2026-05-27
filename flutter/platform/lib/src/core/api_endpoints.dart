@@ -48,4 +48,33 @@ class ApiEndpoints {
   static String legalDocumentByType(String type) => '/legal/documents/$type';
   static const String legalAccept = '/legal/accept';
   static const String legalAcceptanceStatus = '/legal/acceptance-status';
+
+  // ── AI ──
+  static const String aiTextCompletion = '/jobs/text/completion';
+  static const String aiModels = '/jobs/models';
+  static const String aiUsage = '/jobs/usage';
+  static const String aiBalance = '/jobs/balance';
+
+  // ── Metering ──
+  static const String meteringBudget = '/metering/budget';
+  static const String meteringUsage = '/metering/usage';
+
+  // ── Context ──
+  static const String contextRecall = '/context/recall';
+  static const String contextStore = '/context/store';
+  static const String contextMemories = '/context/memories';
+  static const String contextMessages = '/context/messages';
+  static String contextMemoryDetail(String id) => '/context/memories/$id';
+
+  // ── Agent ──
+  static const String agentValidate = '/agent/validate';
+  static const String agentTemplates = '/agent/templates';
+  static const String agentExecute = '/agent/execute';
+  static const String agentRuns = '/agent/runs';
+  static String agentRunDetail(String id) => '/agent/runs/$id';
+
+  // ── Queue ──
+  static const String queueEnqueue = '/queue/enqueue';
+  static String queueStatus(String id) => '/queue/status/$id';
+  static const String queueJobs = '/queue/jobs';
 }
