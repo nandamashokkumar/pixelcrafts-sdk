@@ -2,6 +2,8 @@ export interface PlatformConfig {
   appId: string;
   apiKey: string;
   baseUrl: string;
+  /** AI base URL for jobs, metering, context, agent, queue. */
+  aiBaseUrl?: string;
   tokenProvider: () => Promise<string | null>;
   tokenForceRefresher?: () => Promise<string | null>;
   onSessionExpired?: () => void;

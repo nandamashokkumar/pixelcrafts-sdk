@@ -5,6 +5,11 @@ import { support } from "./modules/support.js";
 import { sync } from "./modules/sync.js";
 import { legal } from "./modules/legal.js";
 import { push } from "./modules/push.js";
+import { ai } from "./modules/ai.js";
+import { agent } from "./modules/agent.js";
+import { context } from "./modules/context.js";
+import { metering } from "./modules/metering.js";
+import { queue } from "./modules/queue.js";
 
 /**
  * PixelCrafts Platform SDK — unified API client for web apps.
@@ -32,4 +37,9 @@ export class PixelCraftsPlatform {
   static readonly sync = sync;
   static readonly legal = legal;
   static readonly push = push;
+  static readonly ai = ai;
+  static readonly agent = agent;
+  static readonly context = context;
+  static readonly metering = metering;
+  static readonly queue = queue;
 }

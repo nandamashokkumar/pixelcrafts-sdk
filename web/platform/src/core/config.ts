@@ -7,6 +7,8 @@ export interface PlatformConfig {
   authBaseUrl?: string;
   /** API base URL for sync, learning, analytics, catalog. */
   apiBaseUrl?: string;
+  /** AI base URL for jobs, metering, context, agent, queue. */
+  aiBaseUrl?: string;
   tokenProvider: () => Promise<string | null>;
   tokenForceRefresher?: () => Promise<string | null>;
   onSessionExpired?: () => void;

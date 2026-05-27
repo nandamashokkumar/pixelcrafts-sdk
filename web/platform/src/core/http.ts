@@ -10,11 +10,13 @@ export class HttpClient {
   /** Resolve the correct base URL for a given path.
    *  Auth/billing/user/push/support/legal → authBaseUrl (gateway)
    *  Sync/learning/analytics → apiBaseUrl (api-mobile)
+   *  AI jobs/metering/context/agent/queue → aiBaseUrl (api-ai)
    *  Falls back to legacy `baseUrl` for backward compatibility. */
   private resolveBaseUrl(path: string): string {
     const cfg = getConfig();
     const authPrefixes = ["/auth/", "/billing/", "/user/", "/push/", "/support/", "/legal/"];
     const apiPrefixes = ["/sync/", "/learning/", "/analytics/", "/catalog/"];
+    const aiPrefixes = ["/jobs/", "/metering/", "/context/", "/agent/", "/tools/", "/queue/", "/observability/"];
 
     if (authPrefixes.some((p) => path.startsWith(p))) {
       if (cfg.authBaseUrl) return cfg.authBaseUrl;
@@ -26,6 +28,13 @@ export class HttpClient {
       if (cfg.apiBaseUrl) return cfg.apiBaseUrl;
       if (cfg.baseUrl) return cfg.baseUrl;
       throw new Error("PixelCraftsPlatform: apiBaseUrl or baseUrl is required.");
+    }
+
+    if (aiPrefixes.some((p) => path.startsWith(p))) {
+      if (cfg.aiBaseUrl) return cfg.aiBaseUrl;
+      if (cfg.apiBaseUrl) return cfg.apiBaseUrl;
+      if (cfg.baseUrl) return cfg.baseUrl;
+      throw new Error("PixelCraftsPlatform: aiBaseUrl, apiBaseUrl, or baseUrl is required for AI endpoints.");
     }
 
     // Default: prefer authBaseUrl (most endpoints are gateway), then fallback to baseUrl
@@ -256,6 +265,11 @@ export class HttpClient {
     if (!res.ok)
       return { success: false, data: null, error: this.friendlyError(res) };
     return { success: true, data: null, error: null };
+  }
+
+  /** Raw POST for streaming endpoints (e.g. SSE). Returns the Response directly. */
+  async postRaw(path: string, body?: unknown): Promise<Response | null> {
+    return this.request("POST", path, { body });
   }
 }
 

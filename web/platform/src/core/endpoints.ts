@@ -28,4 +28,33 @@ export const Endpoints = {
   pushRegister: "/push/register",
   pushUnregister: "/push/unregister",
   pushPreferences: "/push/preferences",
+
+  // AI
+  aiTextCompletion: "/jobs/text/completion",
+  aiModels: "/jobs/models",
+  aiUsage: "/jobs/usage",
+  aiBalance: "/jobs/balance",
+
+  // Metering
+  meteringBudget: "/metering/budget",
+  meteringUsage: "/metering/usage",
+
+  // Context
+  contextRecall: "/context/recall",
+  contextStore: "/context/store",
+  contextMemories: "/context/memories",
+  contextMessages: "/context/messages",
+  contextMemoryDetail: (id: string) => `/context/memories/${id}`,
+
+  // Agent
+  agentValidate: "/agent/validate",
+  agentTemplates: "/agent/templates",
+  agentExecute: "/agent/execute",
+  agentRuns: "/agent/runs",
+  agentRunDetail: (id: string) => `/agent/runs/${id}`,
+
+  // Queue
+  queueEnqueue: "/queue/enqueue",
+  queueStatus: (id: string) => `/queue/status/${id}`,
+  queueJobs: "/queue/jobs",
 };

@@ -7,8 +7,13 @@ export class HttpClient {
   private readonly cacheMs = 55 * 60 * 1000;
   private handlingSessionExpiry = false;
 
-  get baseUrl(): string {
-    return getConfig().baseUrl;
+  private resolveBaseUrl(path: string): string {
+    const cfg = getConfig();
+    const aiPrefixes = ["/jobs/", "/metering/", "/context/", "/agent/", "/tools/", "/queue/", "/observability/"];
+    if (aiPrefixes.some((p) => path.startsWith(p))) {
+      return cfg.aiBaseUrl ?? cfg.baseUrl;
+    }
+    return cfg.baseUrl;
   }
 
   async headers(): Promise<Record<string, string>> {
@@ -43,7 +48,7 @@ export class HttpClient {
     path: string,
     { query, body }: { query?: Record<string, string>; body?: unknown } = {}
   ): Promise<Response | null> {
-    const url = new URL(path, this.baseUrl);
+    const url = new URL(path, this.resolveBaseUrl(path));
     if (query) {
       Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
     }
@@ -168,6 +173,11 @@ export class HttpClient {
     if (!res) return { success: false, data: null, error: "Unable to connect." };
     if (!res.ok) return { success: false, data: null, error: this.friendlyError(res) };
     return { success: true, data: null, error: null };
+  }
+
+  /** Raw POST for streaming endpoints (e.g. SSE). Returns the Response directly. */
+  async postRaw(path: string, body?: unknown): Promise<Response | null> {
+    return this.request("POST", path, { body });
   }
 }
 

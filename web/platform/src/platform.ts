@@ -6,6 +6,11 @@ import { support } from "./modules/support";
 import { sync } from "./modules/sync";
 import { legal } from "./modules/legal";
 import { push } from "./modules/push";
+import { ai } from "./modules/ai";
+import { agent } from "./modules/agent";
+import { context } from "./modules/context";
+import { metering } from "./modules/metering";
+import { queue } from "./modules/queue";
 
 export class PixelCraftsPlatform {
   static init(config: PlatformConfig): void {
@@ -18,6 +23,11 @@ export class PixelCraftsPlatform {
   static readonly sync = sync;
   static readonly legal = legal;
   static readonly push = push;
+  static readonly ai = ai;
+  static readonly agent = agent;
+  static readonly context = context;
+  static readonly metering = metering;
+  static readonly queue = queue;
 
   /** Refresh the platform JWT manually.
    *  Apps that make authenticated requests outside the SDK (e.g. to their
