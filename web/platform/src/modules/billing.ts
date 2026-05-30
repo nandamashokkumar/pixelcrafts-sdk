@@ -12,6 +12,10 @@ export const billing = {
   getPlans(): Promise<ApiResult<Record<string, unknown>>> {
     return http.getMap(Endpoints.billingPlans);
   },
+  /** All of the user's subscriptions (current + past), newest first. */
+  listSubscriptions(): Promise<ApiResult<unknown[]>> {
+    return http.getList(Endpoints.billingSubscriptions);
+  },
   subscribe(planId: string): Promise<ApiResult<Record<string, unknown>>> {
     return http.postMap(Endpoints.billingSubscribe, { planId });
   },

@@ -9,6 +9,7 @@ export const Endpoints = {
   billingStatus: "/billing/status",
   billingEntitlements: "/billing/entitlements",
   billingPlans: "/billing/plans",
+  billingSubscriptions: "/billing/subscriptions",
   billingSubscribe: "/billing/razorpay/subscriptions",
   billingVerify: "/billing/razorpay/subscriptions/verify",
   billingCancel: "/billing/razorpay/subscriptions/cancel",
