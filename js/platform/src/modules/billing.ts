@@ -9,8 +9,9 @@ export const billing = {
   getEntitlements(): Promise<ApiResult<Record<string, unknown>>> {
     return http.getMap(Endpoints.billingEntitlements);
   },
-  getPlans(): Promise<ApiResult<Record<string, unknown>>> {
-    return http.getMap(Endpoints.billingPlans);
+  // The gateway returns { data: [ ...plans ] } — an array, so getList.
+  getPlans(): Promise<ApiResult<unknown[]>> {
+    return http.getList(Endpoints.billingPlans);
   },
   /** All of the user's subscriptions (current + past), newest first. */
   listSubscriptions(): Promise<ApiResult<unknown[]>> {
